@@ -406,10 +406,20 @@ local function register_board(board_name, board_def)
 	minetest.register_node(board_name, bulletin_board_def)
 end
 
+if minetest.get_modpath("default") then
+
 register_board("bulletin_boards:bulletin_board_basic", {
 	desc = S("Public Bulletin Board"),
 	cost = "default:paper",
 	icons = base_icons,
+})
+minetest.register_craft({
+	output = "bulletin_boards:bulletin_board_basic",
+	recipe = {
+		{'group:wood', 'group:wood', 'group:wood'},
+		{'group:wood', 'default:paper', 'group:wood'},
+		{'group:wood', 'group:wood', 'group:wood'},
+	},
 })
 
 register_board("bulletin_boards:bulletin_board_copper", {
@@ -418,3 +428,12 @@ register_board("bulletin_boards:bulletin_board_copper", {
 	foreground = "bulletin_boards_frame_copper.png",
 	icons = base_icons,
 })
+minetest.register_craft({
+	output = "bulletin_boards:bulletin_board_copper",
+	recipe = {
+		{"default:copper_ingot", "default:copper_ingot", "default:copper_ingot"},
+		{"default:copper_ingot", 'default:paper', "default:copper_ingot"},
+		{"default:copper_ingot", "default:copper_ingot", "default:copper_ingot"},
+	},
+})
+end
