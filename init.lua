@@ -399,7 +399,7 @@ local function register_board(board_name, board_def)
 		
 		on_construct = function(pos)
 			local meta = minetest.get_meta(pos)
-			meta:set_string("infotext", board_desc)
+			meta:set_string("infotext", board_def.desc or "")
 		end,
 	}
 
