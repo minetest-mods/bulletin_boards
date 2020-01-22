@@ -11,6 +11,8 @@
 
 local S = minetest.get_translator(minetest.get_current_modname())
 
+local bulletin_max = 6*7
+
 local bulletin_boards = {}
 bulletin_boards.player_state = {}
 bulletin_boards.board_def = {}
@@ -33,7 +35,7 @@ local function save_boards()
 end
 
 local max_text_size = 5000 -- half a book
-local max_title_size = 80
+local max_title_size = 60
 local short_title_size = 12
 
 local function get_board(name)
@@ -46,6 +48,33 @@ local function get_board(name)
 	return board
 end
 
+local function find_next(board, start_index)
+	local index = start_index + 1
+	while index ~= start_index do
+		if board[index] then
+			return index
+		end
+		index = index + 1
+		if index > bulletin_max then
+			index = 1
+		end		
+	end
+	return index
+end
+local function find_prev(board, start_index)
+	local index = start_index - 1
+	while index ~= start_index do
+		if board[index] then
+			return index
+		end
+		index = index - 1
+		if index < 1 then
+			index = bulletin_max
+		end		
+	end
+	return index
+end
+
 local function get_item_desc(stack)
 	local stack_def = stack:get_definition()
 	if stack_def then
@@ -53,7 +82,6 @@ local function get_item_desc(stack)
 	end
 	return stack:get_name()
 end
-
 
 local function show_board(player_name, board_name)
 	local formspec = {}
@@ -135,13 +163,15 @@ local function show_bulletin(player, board_name, index)
 	local player_inventory = minetest.get_inventory({type="player", name=player_name})
 	local has_paper = player_inventory:contains_item("main", "default:paper")
 	
-	local formspec
+	local formspec = {"size[8,8]"
+		.."button[0.2,0;1,1;prev;"..S("Prev").."]"
+		.."button[6.65,0;1,1;next;"..S("Next").."]"}
 	local esc = minetest.formspec_escape
 	if (bulletin.owner == nil or bulletin.owner == player_name) and has_paper then
-		formspec = {"size[8,8]"
-			.."field[0.5,0.75;7.5,0;title;"..S("Title:")..";"..esc(bulletin.title or "").."]"
+		formspec[#formspec+1] = 
+			"field[1.5,0.75;5.5,0;title;"..S("Title:")..";"..esc(bulletin.title or "").."]"
 			.."textarea[0.5,1.15;7.5,7;text;"..S("Contents:")..";"..esc(bulletin.text or "").."]"
-			.."label[0.3,7;"..S("Post:").."]"}
+			.."label[0.3,7;"..S("Post:").."]"
 		for i, icon in ipairs(icons) do
 			formspec[#formspec+1] = "image_button[".. i*0.75-0.5 ..",7.35;1,1;"..icon..";save_"..i..";]"
 			.."tooltip[save_"..i..";"..tip.."]"
@@ -149,20 +179,19 @@ local function show_bulletin(player, board_name, index)
 		formspec[#formspec+1] = "image_button[".. (#icons+1)*0.75-0.25 ..",7.35;1,1;bulletin_boards_delete.png;delete;]"
 			.."tooltip[delete;"..S("Delete this bulletin").."]"
 			.."label["..(#icons+1)*0.75-0.25 ..",7;"..S("Delete:").."]"
-		formspec = table.concat(formspec)
 	elseif bulletin.owner then
-		formspec = "size[8,8]"
-			.."label[0.5,0.5;"..S("by @1", bulletin.owner).."]"
+		formspec[#formspec+1] = 
+			"label[1.4,0.5;"..S("by @1", bulletin.owner).."]"
 			.."tablecolumns[color;text]"
 			.."tableoptions[background=#00000000;highlight=#00000000;border=false]"
-			.."table[0.4,0;7,0.5;title;#FFFF00,"..esc(bulletin.title or "").."]"
+			.."table[1.4,0.25;5,0.5;title;#FFFF00,"..esc(bulletin.title or "").."]"
 			.."textarea[0.5,1.5;7.5,7;;"..esc(bulletin.text or "")..";]"
-			.."button[2.5,7.5;3,1;back;" .. esc(S("Back")) .. "]"
+			.."button[2.5,7.5;3,1;back;" .. S("Back to Board") .. "]"
 	else
 		return
 	end
 
-	minetest.show_formspec(player_name, "bulletin_boards:bulletin", formspec)
+	minetest.show_formspec(player_name, "bulletin_boards:bulletin", table.concat(formspec))
 end
 
 
@@ -192,6 +221,17 @@ minetest.register_on_player_receive_fields(function(player, formname, fields)
 	if fields.back then
 		bulletin_boards.player_state[player_name] = nil
 		show_board(player_name, state.board)
+	end
+	
+	if fields.prev then
+		local next_index = find_prev(board, state.index)
+		show_bulletin(player, state.board, next_index)
+		return
+	end
+	if fields.next then
+		local next_index = find_next(board, state.index)
+		show_bulletin(player, state.board, next_index)
+		return
 	end
 	
 	if fields.delete then
