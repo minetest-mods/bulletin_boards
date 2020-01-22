@@ -1,17 +1,14 @@
 -- TODO:
--- local bulletin boards? May not care about this
--- forward/back buttons to page through the bulletins on a board
--- "Bulletin X/Y" indicator on bulletin page
--- Timeout/teardown option for old posts if there's no space left.
---		Sort posts by number of posts per player, then tear down the oldest post from that group.
---		eg, if a player has 8 posts and another player has 7, tear down the oldest of the first player,
---			then the oldest of their combined posts
--- Admin override to tear down and edit bulletins
--- Protection?
+-- There's potential race conditions in here if two players have the board open
+-- and a culling happens or they otherwise diddle around with it. For now just
+-- make sure it doesn't crash
 
 local S = minetest.get_translator(minetest.get_current_modname())
 
-local bulletin_max = 6*7
+local bulletin_max = 7*8
+
+local culling_interval = 86400 -- one day in seconds
+local culling_min = bulletin_max - 12 -- won't cull if there are this many or fewer bulletins
 
 local bulletin_boards = {}
 bulletin_boards.player_state = {}
@@ -26,7 +23,7 @@ else
 end
 
 local function save_boards()
-	file, e = io.open(path, "w");
+	local file, e = io.open(path, "w");
 	if not file then
 		return error(e);
 	end
@@ -38,16 +35,20 @@ local max_text_size = 5000 -- half a book
 local max_title_size = 60
 local short_title_size = 12
 
+-- gets the bulletins currently on a board
+-- and other persisted data
 local function get_board(name)
 	local board = bulletin_boards.global_boards[name]
 	if board then
 		return board
 	end
 	board = {}
+	board.last_culled = minetest.get_gametime()
 	bulletin_boards.global_boards[name] = board
 	return board
 end
 
+-- for incrementing through the bulletins on a board
 local function find_next(board, start_index)
 	local index = start_index + 1
 	while index ~= start_index do
@@ -75,6 +76,53 @@ local function find_prev(board, start_index)
 	return index
 end
 
+-- Groups bulletins by count-per-player, then picks the oldest bulletin from the group with the highest count.
+
+-- eg, if A has 1 bulletin, B has 2 bulletins, and C has 2 bulletins, then this will pick the oldest
+-- bulletin from (B and C)'s bulletins. Returns index and timestamp, or nil if there's nothing.
+local function find_most_cullable(board_name)
+	local board = get_board(board_name)
+	local player_count = {}
+	local max_count = 0
+	local total = 0
+	for i = 1, bulletin_max do
+		 local bulletin = board[i]
+		 if bulletin then
+			total = total + 1
+			local player_name = bulletin.owner
+			local count = (player_count[player_name] or 0) + 1
+			max_count = math.max(count, max_count)
+			player_count[player_name] = count		 
+		 end
+	end
+	
+	if total <= culling_min then
+		return
+	end
+	
+	local max_players = {}
+	for player_name, count in pairs(player_count) do
+		if count == max_count then
+			max_players[player_name] = true
+		end
+	end
+	
+	local most_cullable_index
+	local most_cullable_timestamp
+	for i = 1, bulletin_max do
+		local bulletin = board[i]
+		if bulletin and max_players[bulletin.owner] then
+			if bulletin.timestamp <= (most_cullable_timestamp or bulletin.timestamp) then
+				most_cullable_timestamp = bulletin.timestamp
+				most_cullable_index = i
+			end
+		end
+	end
+	
+	return most_cullable_index, most_cullable_timestamp
+end
+
+-- safe way to get the description string of an item, in case it's not registered
 local function get_item_desc(stack)
 	local stack_def = stack:get_definition()
 	if stack_def then
@@ -83,10 +131,25 @@ local function get_item_desc(stack)
 	return stack:get_name()
 end
 
+-- shows the base board to a player
 local function show_board(player_name, board_name)
 	local formspec = {}
 	local board = get_board(board_name)
 	local current_time = minetest.get_gametime()
+	
+	local intervals = (current_time - board.last_culled)/culling_interval
+	local cull_count, remaining_cull_time = math.modf(intervals)
+	while cull_count > 0 do
+		local cull_index = find_most_cullable(board_name)
+		if cull_index then
+			board[cull_index] = nil
+			cull_count = cull_count - 1
+		else
+			cull_count = 0
+		end
+	end
+	board.last_culled = current_time - math.floor(culling_interval * remaining_cull_time)
+	
 	local def = bulletin_boards.board_def[board_name]
 	local desc = def.desc
 	local tip
@@ -132,42 +195,34 @@ local function show_board(player_name, board_name)
 	minetest.show_formspec(player_name, "bulletin_boards:board", table.concat(formspec))
 end
 
-local icons = {
-	"bulletin_boards_document_comment_above.png",
-	"bulletin_boards_document_back.png",
-	"bulletin_boards_document_next.png",
-	"bulletin_boards_document_image.png",
-	"bulletin_boards_document_signature.png",
-	"bulletin_boards_to_do_list.png",
-	"bulletin_boards_documents_email.png",
-	"bulletin_boards_receipt_invoice.png",
-}
-
-
+-- shows a specific bulletin on a board
 local function show_bulletin(player, board_name, index)
 	local board = get_board(board_name)
 	local def = bulletin_boards.board_def[board_name]
+	local icons = def.icons
 	local bulletin = board[index] or {}
 	local player_name = player:get_player_name()
 	bulletin_boards.player_state[player_name] = {board=board_name, index=index}
 	
 	local tip
+	local has_cost
 	if def.cost then
 		local stack = ItemStack(def.cost)
+		local player_inventory = minetest.get_inventory({type="player", name=player_name})
 		tip = S("Post bulletin with this icon at the cost of @1 @2", stack:get_count(), get_item_desc(stack))
+		has_cost = player_inventory:contains_item("main", stack)
 	else
 		tip = S("Post bulletin with this icon")
+		has_cost = true
 	end
-
 	
-	local player_inventory = minetest.get_inventory({type="player", name=player_name})
-	local has_paper = player_inventory:contains_item("main", "default:paper")
+	local admin = minetest.check_player_privs(player, "server")
 	
 	local formspec = {"size[8,8]"
 		.."button[0.2,0;1,1;prev;"..S("Prev").."]"
 		.."button[6.65,0;1,1;next;"..S("Next").."]"}
 	local esc = minetest.formspec_escape
-	if (bulletin.owner == nil or bulletin.owner == player_name) and has_paper then
+	if ((bulletin.owner == nil or bulletin.owner == player_name) and has_cost) or admin then
 		formspec[#formspec+1] = 
 			"field[1.5,0.75;5.5,0;title;"..S("Title:")..";"..esc(bulletin.title or "").."]"
 			.."textarea[0.5,1.15;7.5,7;text;"..S("Contents:")..";"..esc(bulletin.text or "").."]"
@@ -181,12 +236,17 @@ local function show_bulletin(player, board_name, index)
 			.."label["..(#icons+1)*0.75-0.25 ..",7;"..S("Delete:").."]"
 	elseif bulletin.owner then
 		formspec[#formspec+1] = 
-			"label[1.4,0.5;"..S("by @1", bulletin.owner).."]"
+			"label[1.4,0.5;"..S("Posted by @1", bulletin.owner).."]"
 			.."tablecolumns[color;text]"
 			.."tableoptions[background=#00000000;highlight=#00000000;border=false]"
-			.."table[1.4,0.25;5,0.5;title;#FFFF00,"..esc(bulletin.title or "").."]"
+			.."table[1.35,0.25;5,0.5;title;#FFFF00,"..esc(bulletin.title or "").."]"
 			.."textarea[0.5,1.5;7.5,7;;"..esc(bulletin.text or "")..";]"
 			.."button[2.5,7.5;3,1;back;" .. S("Back to Board") .. "]"
+		if bulletin.owner == player_name then
+			formspec[#formspec+1] = "image_button[".. (#icons+1)*0.75-0.25 ..",7.35;1,1;bulletin_boards_delete.png;delete;]"
+				.."tooltip[delete;"..S("Delete this bulletin").."]"
+				.."label["..(#icons+1)*0.75-0.25 ..",7;"..S("Delete:").."]"
+		end
 	else
 		return
 	end
@@ -194,7 +254,7 @@ local function show_bulletin(player, board_name, index)
 	minetest.show_formspec(player_name, "bulletin_boards:bulletin", table.concat(formspec))
 end
 
-
+-- interpret clicks on the base board
 minetest.register_on_player_receive_fields(function(player, formname, fields)
 	if formname ~= "bulletin_boards:board" then return end
 	local player_name = player:get_player_name()
@@ -210,14 +270,17 @@ minetest.register_on_player_receive_fields(function(player, formname, fields)
 	end	
 end)
 
+-- interpret clicks on the bulletin
 minetest.register_on_player_receive_fields(function(player, formname, fields)
 	if formname ~= "bulletin_boards:bulletin" then return end
 	local player_name = player:get_player_name()
 	local state = bulletin_boards.player_state[player_name]
 	if not state then return end	
 	local board = get_board(state.board)
+	local def = bulletin_boards.board_def[state.board]
 	if not board then return end
 	
+	-- no security needed on these actions
 	if fields.back then
 		bulletin_boards.player_state[player_name] = nil
 		show_board(player_name, state.board)
@@ -233,6 +296,18 @@ minetest.register_on_player_receive_fields(function(player, formname, fields)
 		show_bulletin(player, state.board, next_index)
 		return
 	end
+
+	if fields.quit then
+		minetest.after(0.1, show_board, player_name, state.board)
+	end
+
+	-- check if the player's allowed to do the stuff after this
+	local admin = minetest.check_player_privs(player, "server")
+	local current_bulletin = board[state.index]
+	if not admin and (current_bulletin and current_bulletin.owner ~= player_name) then
+		-- someone's done something funny. Don't be accusatory, though - could be a race condition
+		return
+	end
 	
 	if fields.delete then
 		board[state.index] = nil
@@ -241,9 +316,12 @@ minetest.register_on_player_receive_fields(function(player, formname, fields)
 	end
 	
 	local player_inventory = minetest.get_inventory({type="player", name=player_name})
-	local has_paper = player_inventory:contains_item("main", "default:paper")
+	local has_cost = true
+	if def.cost then
+		has_cost = player_inventory:contains_item("main", def.cost)
+	end
 	
-	if fields.text ~= "" and has_paper then
+	if fields.text ~= "" and (has_cost or admin) then
 		for field, _ in pairs(fields) do
 			if field:sub(1, #"save_") == "save_" then
 				local i = tonumber(field:sub(#"save_"+1))
@@ -251,26 +329,39 @@ minetest.register_on_player_receive_fields(function(player, formname, fields)
 				bulletin.owner = player_name
 				bulletin.title = fields.title:sub(1, max_title_size)
 				bulletin.text = fields.text:sub(1, max_text_size)
-				bulletin.icon = icons[i]
+				bulletin.icon = def.icons[i]
 				bulletin.timestamp = minetest.get_gametime()
 				board[state.index] = bulletin
-				player_inventory:remove_item("main", "default:paper")
+				if not admin and def.cost then
+					player_inventory:remove_item("main", def.cost)
+				end
 				save_boards()
 				break
 			end
 		end
 	end
-	
-	if fields.quit then
-		minetest.after(0.1, show_board, player_name, state.board)
-	end
-	
+
 	bulletin_boards.player_state[player_name] = nil
 	show_board(player_name, state.board)
 end)
 
+-- default icon set
+local base_icons = {
+	"bulletin_boards_document_comment_above.png",
+	"bulletin_boards_document_back.png",
+	"bulletin_boards_document_next.png",
+	"bulletin_boards_document_image.png",
+	"bulletin_boards_document_signature.png",
+	"bulletin_boards_to_do_list.png",
+	"bulletin_boards_documents_email.png",
+	"bulletin_boards_receipt_invoice.png",
+}
 
-local function generate_random_board(rez, count)
+-- generates a random jumble of icons to superimpose on a bulletin board texture
+-- rez is the "working" canvas size. 32-pixel icons get scattered on that canvas
+-- before it is scaled down to 16 pixels
+local function generate_random_board(rez, count, icons)
+	icons = icons or base_icons
 	local tex = {"([combine:"..rez.."x"..rez}
 	for i = 1, count do
 		tex[#tex+1] = ":"..math.random(1,rez-32)..","..math.random(1,rez-32)
@@ -282,7 +373,9 @@ end
 
 local function register_board(board_name, board_def)
 	bulletin_boards.board_def[board_name] = board_def
-	local tile = "bulletin_boards_corkboard.png^"..generate_random_board(98, 7).."^bulletin_boards_frame.png"
+	local background = board_def.background or "bulletin_boards_corkboard.png"
+	local foreground = board_def.foreground or "bulletin_boards_frame.png"
+	local tile = background.."^"..generate_random_board(98, 7, board_def.icons).."^"..foreground
 	local bulletin_board_def = {
 		description = board_def.desc,
 		groups = {choppy=1},
@@ -310,9 +403,18 @@ local function register_board(board_name, board_def)
 		end,
 	}
 
-	minetest.register_node("bulletin_boards:bulletin_board_"..board_name, bulletin_board_def)
+	minetest.register_node(board_name, bulletin_board_def)
 end
 
-register_board("test1", {desc = S("Test Board 1"), cost = "default:paper"})
-register_board("test2", {desc = S("Test Board 2"), cost = "default:paper"})
-register_board("test3", {desc = S("Test Board 3"), cost = "default:paper"})
+register_board("bulletin_boards:bulletin_board_basic", {
+	desc = S("Public Bulletin Board"),
+	cost = "default:paper",
+	icons = base_icons,
+})
+
+register_board("bulletin_boards:bulletin_board_copper", {
+	desc = S("Copper Board"),
+	cost = "default:copper_ingot",
+	foreground = "bulletin_boards_frame_copper.png",
+	icons = base_icons,
+})

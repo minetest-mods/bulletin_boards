@@ -1,0 +1,87 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2020-01-21 19:38-0700\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=CHARSET\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#: init.lua:158
+msgid "Post your bulletin here for the cost of @1 @2"
+msgstr ""
+
+#: init.lua:160
+msgid "Post your bulletin here"
+msgstr ""
+
+#: init.lua:186
+msgid ""
+"@1\n"
+"Posted by @2\n"
+"@3 days ago"
+msgstr ""
+
+#: init.lua:212
+msgid "Post bulletin with this icon at the cost of @1 @2"
+msgstr ""
+
+#: init.lua:215
+msgid "Post bulletin with this icon"
+msgstr ""
+
+#: init.lua:222
+msgid "Prev"
+msgstr ""
+
+#: init.lua:223
+msgid "Next"
+msgstr ""
+
+#: init.lua:227
+msgid "Title:"
+msgstr ""
+
+#: init.lua:228
+msgid "Contents:"
+msgstr ""
+
+#: init.lua:229
+msgid "Post:"
+msgstr ""
+
+#: init.lua:235
+#: init.lua:247
+msgid "Delete this bulletin"
+msgstr ""
+
+#: init.lua:236
+#: init.lua:248
+msgid "Delete:"
+msgstr ""
+
+#: init.lua:239
+msgid "Posted by @1"
+msgstr ""
+
+#: init.lua:244
+msgid "Back to Board"
+msgstr ""
+
+#: init.lua:410
+msgid "Public Bulletin Board"
+msgstr ""
+
+#: init.lua:416
+msgid "Copper Board"
+msgstr ""
