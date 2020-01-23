@@ -151,18 +151,19 @@ local function show_board(player_name, board_name)
 	board.last_culled = current_time - math.floor(culling_interval * remaining_cull_time)
 	
 	local def = bulletin_boards.board_def[board_name]
-	local desc = def.desc
+	local desc = minetest.formspec_escape(def.desc)
 	local tip
 	if def.cost then
 		local stack = ItemStack(def.cost)
 		tip = S("Post your bulletin here for the cost of @1 @2", stack:get_count(), get_item_desc(stack))
+		desc = desc .. S(", Cost: @1 @2", stack:get_count(), get_item_desc(stack))
 	else
 		tip = S("Post your bulletin here")
 	end
 	
 	formspec[#formspec+1] = "size[8,8.5]"
 	.. "container[0,0]"
-	.. "label[3.25,-0.25;"..minetest.formspec_escape(desc).."]"
+	.. "label[0.0,-0.25;"..desc.."]"
 	.. "container_end[]"
 	.. "container[0,0.5]"
 	local i = 0
