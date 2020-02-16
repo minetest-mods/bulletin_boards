@@ -1,0 +1,17 @@
+, Cost: @1 @2=
+@1@nPosted by @2@n@3 days ago=
+Back to Board=
+Contents:=
+Copper Board=
+Delete this bulletin=
+Delete:=
+Next=
+Post bulletin with this icon=
+Post bulletin with this icon at the cost of @1 @2=
+Post your bulletin here=
+Post your bulletin here for the cost of @1 @2=
+Post:=
+Posted by @1=
+Prev=
+Public Bulletin Board=
+Title:=
