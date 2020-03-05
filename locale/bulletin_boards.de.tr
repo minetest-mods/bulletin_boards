@@ -1,0 +1,39 @@
+# textdomain: bulletin_boards
+
+
+### init.lua ###
+
+#Appended to the title of a bulletin board to indicate how much it costs to post a bulletin here (@1 is a number, @2 is an item name)
+, Cost: @1 @2=, kostet: @1 @2
+#Tooltip. Title of bulletin, author of bulletin, how long ago the bulletin was posted.
+@1@nPosted by @2@n@3 days ago=@1@nGepostet von @2@nvor @3 Tagen
+#Button label
+Back to Board=Zurück zum Brett
+#Text area label
+Contents:=Inhalt:
+#title of a bulletin board
+Copper Board=Kupfernes Brett
+#tooltip
+Delete this bulletin=Lösche diesen Eintrag
+#label
+Delete:=Löschen:
+#Button label
+Next=Nächste
+#tooltip
+Post bulletin with this icon=Eintrag mit diesem Bild anschlagens
+#tooltip
+Post bulletin with this icon at the cost of @1 @2=Schlägt den Eintrag mit diesem Bild für @1 @2 an
+#tooltip
+Post your bulletin here=Schlage deinen Eintrag hier an
+#tooltip
+Post your bulletin here for the cost of @1 @2=Schlage deinen Eintrag für @1 @2 an
+#label
+Post:=Anschlagen:
+#player who posted this bulletin
+Posted by @1=Angeschlagen von @1
+#Button label, short for "previous"
+Prev=Vorher
+#title of a bulletin board
+Public Bulletin Board=Öffentliche Anschlagtafel
+#Text field label
+Title:=Titel:
