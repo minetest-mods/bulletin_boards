@@ -4,7 +4,11 @@
 ### init.lua ###
 
 #Appended to the title of a bulletin board to indicate how much it costs to post a bulletin here (@1 is a number, @2 is an item name)
+<<<<<<< HEAD
 , Cost: @1 @2=, kostet: @1 @2
+=======
+, Cost: @1 @2=, Kostet: @1 @2
+>>>>>>> e32e0fe2363405091252c64357b3e995405920cc
 #Tooltip. Title of bulletin, author of bulletin, how long ago the bulletin was posted.
 @1@nPosted by @2@n@3 days ago=@1@nGepostet von @2@nvor @3 Tagen
 #Button label
