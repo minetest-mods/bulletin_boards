@@ -438,3 +438,20 @@ minetest.register_craft({
 	},
 })
 end
+
+
+if core.get_modpath("mcl_core") then
+   register_board("bulletin_boards:wood", {
+		     desc = S("Public Bulletin Board"),
+		     cost = "mcl_core:paper",
+		     icons = base_icons,
+   })
+   core.register_craft({
+	 output = "bulletin_boards:wood",
+	 recipe = {
+	    {'group:wood', 'group:wood', 'group:wood'},
+	    {'group:wood', 'mcl_core:paper', 'group:wood'},
+	    {'group:wood', 'group:wood', 'group:wood'},
+	 },
+   })
+end
