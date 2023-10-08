@@ -441,35 +441,34 @@ end
 
 
 if core.get_modpath("mcl_core") then
-   register_board("bulletin_boards:wood", {
-		     desc = S("Public Bulletin Board"),
-		     cost = "mcl_core:paper",
-		     icons = base_icons,
-   })
-   core.register_craft({
-	 output = "bulletin_boards:wood",
-	 recipe = {
-	    {'group:wood', 'group:wood', 'group:wood'},
-	    {'group:wood', 'mcl_core:paper', 'group:wood'},
-	    {'group:wood', 'group:wood', 'group:wood'},
-	 },
-   })
-   if minetest.get_modpath("mcl_copper") then
-      
-      register_board("bulletin_boards:copper", {
+	register_board("bulletin_boards:wood", {
+		desc = S("Public Bulletin Board"),
+		cost = "mcl_core:paper",
+		icons = base_icons,
+	})
+	core.register_craft({
+		output = "bulletin_boards:wood",
+		recipe = {
+			{'group:wood', 'group:wood', 'group:wood'},
+			{'group:wood', 'mcl_core:paper', 'group:wood'},
+			{'group:wood', 'group:wood', 'group:wood'},
+		},
+	})
+
+	if minetest.get_modpath("mcl_copper") then
+		register_board("bulletin_boards:copper", {
 			desc = S("Copper Board"),
 			cost = "mcl_copper:copper_ingot",
 			foreground = "bulletin_boards_frame_copper.png",
 			icons = base_icons,
-      })
-      core.register_craft({
-	    output = "bulletin_boards:copper",
-	    recipe = {
-	       {"mcl_copper:copper_ingot", "mcl_copper:copper_ingot", "mcl_copper:copper_ingot"},
-	       {"mcl_copper:copper_ingot", 'mcl_core:paper', "mcl_copper:copper_ingot"},
-	       {"mcl_copper:copper_ingot", "mcl_copper:copper_ingot", "mcl_copper:copper_ingot"},
-	    },
-      })
-
-   end
+		})
+		core.register_craft({
+			output = "bulletin_boards:copper",
+			recipe = {
+				{"mcl_copper:copper_ingot", "mcl_copper:copper_ingot", "mcl_copper:copper_ingot"},
+				{"mcl_copper:copper_ingot", 'mcl_core:paper', "mcl_copper:copper_ingot"},
+				{"mcl_copper:copper_ingot", "mcl_copper:copper_ingot", "mcl_copper:copper_ingot"},
+			},
+		})
+	end
 end
