@@ -379,7 +379,9 @@ local function register_board(board_name, board_def)
 	local tile = background.."^"..generate_random_board(98, 7, board_def.icons).."^"..foreground
 	local bulletin_board_def = {
 		description = board_def.desc,
-		groups = {choppy=1},
+		groups = {choppy=1, axey=1, handy=1},
+		_mcl_hardness = 0.8,
+		_mcl_blast_resistance = 1,
 		tiles = {tile},
 		inventory_image = tile,
 		paramtype = "light",
