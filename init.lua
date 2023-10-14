@@ -379,7 +379,9 @@ local function register_board(board_name, board_def)
 	local tile = background.."^"..generate_random_board(98, 7, board_def.icons).."^"..foreground
 	local bulletin_board_def = {
 		description = board_def.desc,
-		groups = {choppy=1},
+		groups = {choppy=1, axey=1, handy=1},
+		_mcl_hardness = 0.8,
+		_mcl_blast_resistance = 1,
 		tiles = {tile},
 		inventory_image = tile,
 		paramtype = "light",
@@ -437,4 +439,38 @@ minetest.register_craft({
 		{"default:copper_ingot", "default:copper_ingot", "default:copper_ingot"},
 	},
 })
+end
+
+
+if core.get_modpath("mcl_core") then
+	register_board("bulletin_boards:wood", {
+		desc = S("Public Bulletin Board"),
+		cost = "mcl_core:paper",
+		icons = base_icons,
+	})
+	core.register_craft({
+		output = "bulletin_boards:wood",
+		recipe = {
+			{'group:wood', 'group:wood', 'group:wood'},
+			{'group:wood', 'mcl_core:paper', 'group:wood'},
+			{'group:wood', 'group:wood', 'group:wood'},
+		},
+	})
+
+	if minetest.get_modpath("mcl_copper") then
+		register_board("bulletin_boards:copper", {
+			desc = S("Copper Board"),
+			cost = "mcl_copper:copper_ingot",
+			foreground = "bulletin_boards_frame_copper.png",
+			icons = base_icons,
+		})
+		core.register_craft({
+			output = "bulletin_boards:copper",
+			recipe = {
+				{"mcl_copper:copper_ingot", "mcl_copper:copper_ingot", "mcl_copper:copper_ingot"},
+				{"mcl_copper:copper_ingot", 'mcl_core:paper', "mcl_copper:copper_ingot"},
+				{"mcl_copper:copper_ingot", "mcl_copper:copper_ingot", "mcl_copper:copper_ingot"},
+			},
+		})
+	end
 end
