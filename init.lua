@@ -9,6 +9,7 @@ local bulletin_max = 7*8
 
 local culling_interval = 86400 -- one day in seconds
 local culling_min = bulletin_max - 12 -- won't cull if there are this many or fewer bulletins
+local adminpriv = minetest.settings:get("bulletin_boards.adminpriv") or "server"
 
 local bulletin_boards = {}
 bulletin_boards.player_state = {}
@@ -217,7 +218,7 @@ local function show_bulletin(player, board_name, index)
 		has_cost = true
 	end
 
-	local admin = minetest.check_player_privs(player, "server")
+	local admin = minetest.check_player_privs(player, adminpriv)
 
 	local formspec = {"size[8,8]"
 		.."button[0.2,0;1,1;prev;"..S("Prev").."]"
@@ -303,7 +304,7 @@ minetest.register_on_player_receive_fields(function(player, formname, fields)
 	end
 
 	-- check if the player's allowed to do the stuff after this
-	local admin = minetest.check_player_privs(player, "server")
+	local admin = minetest.check_player_privs(player, adminpriv)
 	local current_bulletin = board[state.index]
 	if not admin and (current_bulletin and current_bulletin.owner ~= player_name) then
 		-- someone's done something funny. Don't be accusatory, though - could be a race condition

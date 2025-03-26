@@ -1,0 +1,4 @@
+# Adminpriv
+# Set this to the priv you want to have moderation rights on bulletin boards
+# Optional, default is "server"
+bulletin_boards.adminpriv (Adminpriv) string server
